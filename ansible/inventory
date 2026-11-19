@@ -1,0 +1,9 @@
+[web]
+192.168.122.12
+
+[api]
+192.168.122.10
+
+[all:vars]
+ansible_user=ubuntu
+ansible_ssh_private_key_file=~/.ssh/id_ed25519

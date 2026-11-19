@@ -1,0 +1,61 @@
+
+---
+- name: Configurar VM2 - API e MySQL
+  hosts: api
+  become: true
+
+  tasks:
+    - name: Aguardar cloud-init
+      command: cloud-init status --wait
+
+    - name: Criar diretorio da API
+      file:
+        path: /opt/livraria/api
+        state: directory
+
+    - name: Copiar arquivos da API
+      copy:
+        src: "../api/{{ item }}"
+        dest: /opt/livraria/api/
+      loop:
+        - src
+        - Dockerfile
+        - docker-compose.yml
+        - package.json
+        - package-lock.json
+
+    - name: Iniciar API e MySQL
+      command: docker compose up -d --build
+      args:
+        chdir: /opt/livraria/api
+
+- name: Configurar VM1 - Interface Web
+  hosts: web
+  become: true
+
+  tasks:
+    - name: Aguardar cloud-init
+      command: cloud-init status --wait
+
+    - name: Copiar aplicacao web
+      copy:
+        src: ../app/
+        dest: /opt/livraria/app/
+
+    - name: Configurar endereco da API
+      replace:
+        path: /opt/livraria/app/web/index.html
+        regexp: 'http://localhost:3000'
+        replace: "http://{{ groups['api'][0] }}:3000"
+
+    - name: Construir imagem Docker
+      command: docker build -t livraria-web .
+      args:
+        chdir: /opt/livraria/app
+
+    - name: Remover container anterior
+      command: docker rm -f livraria-web
+      failed_when: false
+
+    - name: Iniciar interface web
+      command: docker run -d --restart unless-stopped --name livraria-web -p 80:80 livraria-web

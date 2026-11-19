@@ -1,0 +1,160 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livraria DevOps</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f4f8;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+        }
+
+        h1 {
+            color: #263b59;
+            text-align: center;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin: 7px 0;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .livro {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Livraria DevOps</h1>
+
+        <h2>Cadastrar livro</h2>
+
+        <form id="formLivro">
+            <input id="titulo" placeholder="Título do livro" required>
+            <input id="autor" placeholder="Autor" required>
+            <input id="preco" type="number" step="0.01" min="0"
+                   placeholder="Preço" required>
+            <input id="quantidade" type="number" min="0" step="1"
+                   placeholder="Quantidade" required>
+
+            <button type="submit">Cadastrar livro</button>
+        </form>
+
+        <h2>Livros cadastrados</h2>
+
+        <button onclick="listarLivros()">Atualizar lista</button>
+
+        <div id="listaLivros"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+
+        document.getElementById('formLivro')
+            .addEventListener('submit', async (event) => {
+                event.preventDefault();
+
+                const livro = {
+                    titulo: document.getElementById('titulo').value,
+                    autor: document.getElementById('autor').value,
+                    preco: Number(document.getElementById('preco').value),
+                    quantidade: Number(document.getElementById('quantidade').value)
+                };
+
+                try {
+                    const resposta = await fetch(`${API_URL}/livro`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(livro)
+                    });
+
+                    const resultado = await resposta.json();
+
+                    if (!resposta.ok) {
+                        throw new Error(resultado.erro);
+                    }
+
+                    alert('Livro cadastrado com sucesso!');
+                    event.target.reset();
+                    listarLivros();
+
+                } catch (erro) {
+                    alert('Erro: ' + erro.message);
+                }
+            });
+
+        async function listarLivros() {
+            const lista = document.getElementById('listaLivros');
+
+            try {
+                const resposta = await fetch(`${API_URL}/livros`);
+
+                if (!resposta.ok) {
+                    throw new Error('Falha ao consultar livros');
+                }
+
+                const livros = await resposta.json();
+
+                lista.replaceChildren();
+
+                if (livros.length === 0) {
+                    lista.textContent = 'Nenhum livro cadastrado.';
+                    return;
+                }
+
+                livros.forEach(livro => {
+                    const item = document.createElement('div');
+                    item.className = 'livro';
+
+                    const titulo = document.createElement('strong');
+                    titulo.textContent = livro.titulo;
+
+                    const detalhes = document.createElement('p');
+                    detalhes.textContent =
+                        `Autor: ${livro.autor} | Preço: R$ ${Number(livro.preco).toFixed(2)} | Quantidade: ${livro.quantidade}`;
+
+                    item.append(titulo, detalhes);
+                    lista.appendChild(item);
+                });
+
+            } catch (erro) {
+                lista.textContent = 'Erro ao carregar livros: ' + erro.message;
+            }
+        }
+
+        listarLivros();
+    </script>
+</body>
+</html>
